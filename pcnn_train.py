@@ -223,10 +223,24 @@ if __name__ == '__main__':
         
         if epoch % args.sampling_interval == 0:
             print('......sampling......')
-            sample_t = sample(model, args.sample_batch_size, args.obs, sample_op)
-            sample_t = rescaling_inv(sample_t)
-            save_images(sample_t, args.sample_dir)
-            sample_result = wandb.Image(sample_t, caption="epoch {}".format(epoch))
+            #sample_t = sample(model, args.sample_batch_size, args.obs, sample_op)
+            #sample_t = rescaling_inv(sample_t)
+            for class_idx in range(4):  # assuming 4 classes
+              label_tensor = torch.full((args.sample_batch_size,), class_idx, dtype=torch.long).to(device)
+              sample_t = sample(model, args.sample_batch_size, args.obs, sample_op, label=label_tensor)
+              sample_t = rescaling_inv(sample_t)
+
+              save_images(
+                  sample_t,
+                  args.sample_dir,
+                  label=f"epoch{epoch}_class{class_idx}"
+              )
+
+              if args.en_wandb:
+                  sample_result = wandb.Image(sample_t, caption=f"epoch {epoch} - class {class_idx}")
+                  wandb.log({f"samples_class{class_idx}": sample_result})
+            #save_images(sample_t, args.sample_dir)
+            #sample_result = wandb.Image(sample_t, caption="epoch {}".format(epoch))
             
             gen_data_dir = args.sample_dir
             ref_data_dir = args.data_dir +'/test'
@@ -241,7 +255,8 @@ if __name__ == '__main__':
                 wandb.log({"samples": sample_result,
                             "FID": fid_score})
         
-        if (epoch + 1) % args.save_interval == 0: 
-            if not os.path.exists("models"):
-                os.makedirs("models")
-            torch.save(model.state_dict(), 'models/{}_{}.pth'.format(model_name, epoch))
+if (epoch + 1) % args.save_interval == 0: 
+    print(f"✅ Saving model checkpoint at epoch {epoch}")
+    if not os.path.exists("models"):
+        os.makedirs("models")
+    torch.save(model.state_dict(), 'models/{}_{}.pth'.format(model_name, epoch))

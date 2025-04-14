@@ -5,6 +5,18 @@ import torch.nn.functional as F
 from torch.nn.utils import weight_norm as wn
 from utils import *
 
+class FiLM(nn.Module):
+    def __init__(self, in_features, out_features):
+        super(FiLM, self).__init__()
+        self.gamma_fc = nn.Linear(in_features, out_features)
+        self.beta_fc = nn.Linear(in_features, out_features)
+
+    def forward(self, x, cond):
+        gamma = self.gamma_fc(cond).unsqueeze(-1).unsqueeze(-1)
+        beta = self.beta_fc(cond).unsqueeze(-1).unsqueeze(-1)
+        return gamma * x + beta
+
+
 class nin(nn.Module):
     def __init__(self, dim_in, dim_out):
         super(nin, self).__init__()
@@ -116,8 +128,9 @@ skip connection parameter : 0 = no skip connection
                             2 = skip connection where skip input size === 2 * input size
 '''
 class gated_resnet(nn.Module):
-    def __init__(self, num_filters, conv_op, nonlinearity=concat_elu, skip_connection=0):
+    def __init__(self, num_filters, conv_op, nonlinearity=concat_elu, skip_connection=0,class_cond_dim=None):
         super(gated_resnet, self).__init__()
+        self.class_cond_dim = class_cond_dim
         self.skip_connection = skip_connection
         self.nonlinearity = nonlinearity
         self.conv_input = conv_op(2 * num_filters, num_filters) # cuz of concat elu
@@ -127,15 +140,21 @@ class gated_resnet(nn.Module):
 
         self.dropout = nn.Dropout2d(0.5)
         self.conv_out = conv_op(2 * num_filters, 2 * num_filters)
+        
+        if class_cond_dim is not None:
+            self.film = FiLM(class_cond_dim, num_filters)
+        else:
+            self.film = None
 
 
-    def forward(self, og_x, a=None):
+    def forward(self, og_x, a=None, class_cond=None):
         x = self.conv_input(self.nonlinearity(og_x))
-        if a is not None :
+        if a is not None:
             x += self.nin_skip(self.nonlinearity(a))
+        if self.film is not None and class_cond is not None:
+            x = self.film(x, class_cond)
         x = self.nonlinearity(x)
         x = self.dropout(x)
         x = self.conv_out(x)
         a, b = torch.chunk(x, 2, dim=1)
-        c3 = a * F.sigmoid(b)
-        return og_x + c3
+        return og_x + a * torch.sigmoid(b)
