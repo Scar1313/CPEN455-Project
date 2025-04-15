@@ -41,9 +41,7 @@ def train_or_test(model, data_loader, optimizer, loss_op, device, args, epoch, m
 if __name__ == '__main__':
 
 
-    # Make sure the directory exists
-    drive_save_dir = '/content/drive/MyDrive/CPEN455/models'
-    os.makedirs(drive_save_dir, exist_ok=True)
+
     parser = argparse.ArgumentParser()
     
     parser.add_argument('-w', '--en_wandb', type=bool, default=False,
@@ -250,6 +248,7 @@ if __name__ == '__main__':
             gen_data_dir = args.sample_dir
             ref_data_dir = args.data_dir +'/test'
             paths = [gen_data_dir, ref_data_dir]
+            fid_score = None
             try:
                 fid_score = calculate_fid_given_paths(paths, 32, device, dims=192)
                 print("Dimension {:d} works! fid score: {}".format(192, fid_score))
@@ -258,16 +257,16 @@ if __name__ == '__main__':
                 
             if args.en_wandb:
                 wandb.log({"samples": sample_result,
-                            "FID": fid_score})
+                            "FID": fid_score if fid_score is not None else -1 })
         
 
 
-    # Inside your training loop:
-    if (epoch + 1) % args.save_interval == 0:
-        os.makedirs(args.save_dir, exist_ok=True)  # ensure models/ exists
-        save_path = os.path.join(args.save_dir, f'{model_name}_{epoch+1}.pth')
-        print(f"📦 Attempting to save model at epoch {epoch+1}")
-        print(f"Model name: {model_name}")
-        print(f"Local save path: {save_path}")
-        torch.save(model.state_dict(), save_path)
-        print("✅ Model checkpoint saved locally.")
+        # Inside your training loop:
+        if (epoch + 1) % args.save_interval == 0:
+            os.makedirs(args.save_dir, exist_ok=True)  # ensure models/ exists
+            save_path = os.path.join(args.save_dir, f'{model_name}_{epoch+1}.pth')
+            print(f"📦 Attempting to save model at epoch {epoch+1}")
+            print(f"Model name: {model_name}")
+            print(f"Local save path: {save_path}")
+            torch.save(model.state_dict(), save_path)
+            print("✅ Model checkpoint saved locally.")
