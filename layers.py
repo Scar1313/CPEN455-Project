@@ -11,9 +11,21 @@ class FiLM(nn.Module):
         self.gamma_fc = nn.Linear(in_features, out_features)
         self.beta_fc = nn.Linear(in_features, out_features)
 
+        # Initialize gamma to 1 (via bias) and weight to 0 (so it stays 1 initially)
+        self.gamma_fc.weight.data.fill_(0)
+        self.gamma_fc.bias.data.fill_(1)
+
+        # Initialize beta to 0
+        self.beta_fc.weight.data.fill_(0)
+        self.beta_fc.bias.data.fill_(0)
+
+
+        
     def forward(self, x, cond):
         gamma = self.gamma_fc(cond).unsqueeze(-1).unsqueeze(-1)
         beta = self.beta_fc(cond).unsqueeze(-1).unsqueeze(-1)
+
+        print(f"Gamma mean: {gamma.mean().item():.4f}, std: {gamma.std().item():.4f}")  # add this
         return gamma * x + beta
 
 

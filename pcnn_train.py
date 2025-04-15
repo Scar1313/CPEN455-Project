@@ -262,11 +262,12 @@ if __name__ == '__main__':
         
 
 
-        # Inside your training loop:
-        if (epoch + 1) % args.save_interval == 0:
-            save_path = os.path.join(drive_save_dir, f'{model_name}_{epoch+1}.pth')
-            print(f"📦 Attempting to save model at epoch {epoch+1}")
-            print(f"Model name: {model_name}")
-            print(f"Drive save path: {save_path}")
-            torch.save(model.state_dict(), save_path)
-            print("✅ Model checkpoint saved to Google Drive.")
+    # Inside your training loop:
+    if (epoch + 1) % args.save_interval == 0:
+        os.makedirs(args.save_dir, exist_ok=True)  # ensure models/ exists
+        save_path = os.path.join(args.save_dir, f'{model_name}_{epoch+1}.pth')
+        print(f"📦 Attempting to save model at epoch {epoch+1}")
+        print(f"Model name: {model_name}")
+        print(f"Local save path: {save_path}")
+        torch.save(model.state_dict(), save_path)
+        print("✅ Model checkpoint saved locally.")
