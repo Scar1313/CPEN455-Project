@@ -39,6 +39,11 @@ def train_or_test(model, data_loader, optimizer, loss_op, device, args, epoch, m
         wandb.log({mode + "-epoch": epoch})
 
 if __name__ == '__main__':
+
+
+    # Make sure the directory exists
+    drive_save_dir = '/content/drive/MyDrive/CPEN455/models'
+    os.makedirs(drive_save_dir, exist_ok=True)
     parser = argparse.ArgumentParser()
     
     parser.add_argument('-w', '--en_wandb', type=bool, default=False,
@@ -255,8 +260,13 @@ if __name__ == '__main__':
                 wandb.log({"samples": sample_result,
                             "FID": fid_score})
         
-if (epoch + 1) % args.save_interval == 0: 
-    print(f"✅ Saving model checkpoint at epoch {epoch}")
-    if not os.path.exists("models"):
-        os.makedirs("models")
-    torch.save(model.state_dict(), 'models/{}_{}.pth'.format(model_name, epoch))
+
+
+        # Inside your training loop:
+        if (epoch + 1) % args.save_interval == 0:
+            save_path = os.path.join(drive_save_dir, f'{model_name}_{epoch+1}.pth')
+            print(f"📦 Attempting to save model at epoch {epoch+1}")
+            print(f"Model name: {model_name}")
+            print(f"Drive save path: {save_path}")
+            torch.save(model.state_dict(), save_path)
+            print("✅ Model checkpoint saved to Google Drive.")
