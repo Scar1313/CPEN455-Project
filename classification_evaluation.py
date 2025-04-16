@@ -21,18 +21,14 @@ import csv
 NUM_CLASSES = len(my_bidict)
 
 #TODO: Begin of your code
-def __getitem__(self, idx):
-    img_path, label = self.samples[idx]
-    image = read_image(img_path).type(torch.float32) / 255.
+def get_label(model, x, device):
+    with torch.no_grad():
+        output = model(x.to(device), label=None)
+        batch_size = x.size(0)
+        out_flat = output.reshape(batch_size, -1, 10)  # safer than view()
+        probs = out_flat.mean(dim=1)
+        return torch.argmax(probs, dim=1)
 
-    if image.shape[0] == 1:
-        image = replicate_color_channel(image)
-    if self.transform:
-        image = self.transform(image)
-
-    # Convert int label (e.g., 0) to class string (e.g., "Class0")
-    label = [k for k, v in my_bidict.items() if v == label][0]
-    return image, label
 
 
 
@@ -45,9 +41,18 @@ def classifier(model, data_loader, device):
     for batch_idx, item in enumerate(tqdm(data_loader)):
         model_input, categories = item
         model_input = model_input.to(device)
-        original_label = [my_bidict[item] for item in categories]
+        #print("categories:", categories)
+        #print("types in categories:", [type(item) for item in categories])
+        #print("individual items:", [item for item in categories])
+
+        original_label = [int(item) for item in categories] # had to change this in order for it to run
+
+
         original_label = torch.tensor(original_label, dtype=torch.int64).to(device)
         answer = get_label(model, model_input, device)
+        #print("predictions:", answer.tolist())
+        #print("ground truth:", [int(item) for item in categories])
+
         correct_num = torch.sum(answer == original_label)
         acc_tracker.update(correct_num.item(), model_input.shape[0])
     
