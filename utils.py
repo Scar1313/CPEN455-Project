@@ -179,6 +179,11 @@ def sample(model, sample_batch_size, obs, sample_op, label=None):
     with torch.no_grad():
         data = torch.zeros(sample_batch_size, obs[0], obs[1], obs[2])
         data = data.to(next(model.parameters()).device)
+        
+        if label is not None:
+            label = torch.full((sample_batch_size,), label, dtype=torch.long).to(data.device)
+
+        
         for i in range(obs[1]):
             for j in range(obs[2]):
                 data_v = data

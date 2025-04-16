@@ -25,7 +25,9 @@ class FiLM(nn.Module):
         gamma = self.gamma_fc(cond).unsqueeze(-1).unsqueeze(-1)
         beta = self.beta_fc(cond).unsqueeze(-1).unsqueeze(-1)
 
-        print(f"Gamma mean: {gamma.mean().item():.4f}, std: {gamma.std().item():.4f}")  # add this
+        if self.training and torch.rand(1).item() < 0.01:  # log ~1% of the time
+            print(f"[Train] Gamma mean: {gamma.mean().item():.4f}, std: {gamma.std().item():.4f}")
+
         return gamma * x + beta
 
 

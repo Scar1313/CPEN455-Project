@@ -21,11 +21,22 @@ import csv
 NUM_CLASSES = len(my_bidict)
 
 #TODO: Begin of your code
-def get_label(model, model_input, device):
-    # Write your code here, replace the random classifier with your trained model
-    # and return the predicted label, which is a tensor of shape (batch_size,)
-    answer = model(model_input, device)
-    return answer
+def __getitem__(self, idx):
+    img_path, label = self.samples[idx]
+    image = read_image(img_path).type(torch.float32) / 255.
+
+    if image.shape[0] == 1:
+        image = replicate_color_channel(image)
+    if self.transform:
+        image = self.transform(image)
+
+    # Convert int label (e.g., 0) to class string (e.g., "Class0")
+    label = [k for k, v in my_bidict.items() if v == label][0]
+    return image, label
+
+
+
+
 # End of your code
 
 def classifier(model, data_loader, device):
@@ -68,7 +79,7 @@ if __name__ == '__main__':
 
     #TODO:Begin of your code
     #You should replace the random classifier with your trained model
-    model = random_classifier(NUM_CLASSES)
+    model = PixelCNN(nr_resnet=1, nr_filters=160, input_channels=3, nr_logistic_mix=5)
     #End of your code
     
     model = model.to(device)
@@ -84,5 +95,4 @@ if __name__ == '__main__':
     
     acc = classifier(model = model, data_loader = dataloader, device = device)
     print(f"Accuracy: {acc}")
-        
         
